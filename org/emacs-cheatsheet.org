@@ -1,0 +1,414 @@
+#+TITLE: Raccoon's Emacs org-mode cheat sheet
+#+OPTIONS: timestamp:nil author:nil
+
+* Set up on a new machine
+
+1. Install GNU Emacs and Git (this config was tested with Emacs 30.2).
+2. Clone the public [[https://github.com/racket-raccoon/dotfiles/blob/main/.emacs.d/init.el][init.el from my dotfiles]] and copy it into place, then install the Emacs packages:
+
+   #+begin_src sh
+   git clone https://github.com/racket-raccoon/dotfiles.git ~/dotfiles
+   install -Dm644 ~/dotfiles/.emacs.d/init.el ~/.emacs.d/init.el
+   mkdir -p ~/org ~/org-roam
+   emacs -Q --batch -l ~/.emacs.d/init.el -f my/bootstrap-packages
+   #+end_src
+
+   If you use [[https://yadm.io/docs/getting_started][yadm]] to manage all your dotfiles, run =yadm clone https://github.com/racket-raccoon/dotfiles.git= instead of the =git clone= and =install= lines. It checks out the tracked files directly under your home directory, including =~/.emacs.d/init.el=; an existing conflicting file is left in place for you to resolve.
+
+   The bootstrap installs Evil, Evil Org, Magit, Org-roam, and their dependencies. It installs Org from GNU ELPA.
+
+3. Start =emacs= normally.
+
+* Upgrade all packages
+
+1. Start a fresh Emacs session before opening any Org file.
+2. Run =M-x package-upgrade-all= and confirm the upgrades.
+3. Restart Emacs.
+
+Org is pinned to GNU ELPA; Org-roam currently comes from MELPA.
+
+* Files
+
+- Find or open a file: =C-x C-f= or =SPC f f= (=find-file=). Enter its path and press =RET=.
+- Open a recently visited file: =SPC f r= (=recentf-open=).
+
+* Help
+
+- =SPC= starts your leader shortcuts in Evil normal mode; which-key shows the available keys.
+- Run a named command: =M-x= or =SPC := (=execute-extended-command=).
+- Describe a variable and see its current value: =C-h v= or =SPC h v= (=describe-variable=). Enter the variable name and press =RET=.
+- Reload your active =init.el= from disk: =SPC h r r= (=my/reload-init-file=).
+
+* Editing
+
+- In normal mode, =u= undoes and =C-r= redoes. Redo needs =evil-undo-system= set to =undo-redo=; save it with =M-: (customize-save-variable 'evil-undo-system 'undo-redo) RET=.
+- In minibuffer prompts, =C-a= moves to the start of the line (Vim normal =0=); =C-k= cuts from the cursor to the end (Vim =D=). =C-a C-k= clears a prefilled answer; =C-y= pastes it back.
+
+* Buffers and panes
+
+Emacs calls a pane a /window/. A window displays a /buffer/; closing one of several windows leaves its buffer open.
+
+| Action | Emacs / our leader | Evil normal mode |
+|--------+--------------------+------------------|
+| Split top/bottom | =C-x 2= | =:sp= or =C-w s= |
+| Split side by side | =C-x 3= | =:vsp= or =C-w v= |
+| Move to another window | =C-x o= | =C-w w= |
+| Switch buffer in this window | =C-x b= or =SPC b b= | =:b NAME= (or =:b= for the previous buffer) |
+| Close this window | =C-x 0= | =:q= when there are multiple windows |
+| Keep only this window | =C-x 1= | =:only= or =C-w o= |
+| Kill the current buffer | =SPC b k=; =C-x k= lets you choose | =:bd= |
+
+- On the last window, =:q= may close the tab or frame, or exit Emacs; =C-x 0= cannot delete the sole window.
+- =:bd= kills the buffer and may close windows showing it. For =C-x b= / =SPC b b=, press =RET= to return to the most recent buffer.
+
+* Org mode
+
+[[https://orgmode.org/manual/][Org manual]]
+
+- Move a heading and its subtree up or down: =M-↑= / =M-↓= (Alt + Up/Down; =org-metaup= / =org-metadown=).
+- Promote or demote a heading: =M-←= / =M-→= (Alt + Left/Right; =org-metaleft= / =org-metaright=).
+- Cycle a heading through TODO states (such as TODO and DONE): =S-←= / =S-→= (Shift + Left/Right; =org-shiftleft= / =org-shiftright=).
+- Change the current heading's TODO state: =C-c C-t= (=org-todo=; T for TODO).
+- Schedule the current heading: =C-c C-s= (=org-schedule=; S for SCHEDULED). Choose a date when prompted.
+- Set a deadline for the current heading: =C-c C-d= (=org-deadline=; D for DEADLINE). Choose a date when prompted.
+
+** Links
+
+- Remember the order: *Go, then Show* in Org: =[[target][description]]=. Markdown reverses it: *Show, then Go* =[description](target)=.
+- Insert a link: =C-c C-l= (=org-insert-link=). Enter the target, then its description. On an existing link, the same command edits it.
+- To turn existing text into a link, select it (for example, =v= in Evil normal mode), press =C-c C-l=, enter the target, then press =RET= to keep the selected text as the description: =[[target][selected text]]=.
+- Open the link at the cursor: =C-c C-o= (=org-open-at-point=); web links open in a browser.
+- After following an internal link, go back to the previous Org location: =C-c &= (=org-mark-ring-goto=). Repeat it to go farther back.
+- Internal targets in the same file: a headline (=* Topic=, link =[[*Topic]]=); a dedicated target (=<<topic>>=, link =[[topic]]=); a named element such as a table or block (=#+NAME: topic= immediately above it, link =[[topic]]=); or a heading's =CUSTOM_ID= property (=topic=, link =[[#topic]]=).
+- A radio target (=<<<topic>>>=) makes matching plain text elsewhere in the file into links automatically. After adding one, press =C-c C-c= on the target to refresh those links.
+- External links use =type:location=: for example, =[[https://orgmode.org][Org mode]]= opens a website, and =[[file:notes.org][Notes]]= opens a file.
+- To link to a heading by a unique ID, run =M-x org-id-copy= on the destination heading. It adds a UUID =:ID:= property if needed and copies the ID. Save that file, then use =C-c C-l= elsewhere: enter =id:=, paste the ID with =C-y=, and add a description (=[[id:UUID][description]]=). Running =org-id-copy= again on the same heading copies its existing ID.
+- To reveal the full =[[target][description]]= markup of links in the current buffer, run =M-x org-toggle-link-display=. Run it again to restore the descriptive display.
+
+** Tables
+
+- A line starting with =|= is a table row; =|-= is a horizontal separator (usually between header and data). While editing a table, =TAB= aligns it and moves to the next cell; =RET= moves to the next row. =C-c -= inserts a separator.
+- With point in a column, =M-←= / =M-→= moves that column left/right; =M-S-←= deletes it; =M-S-→= inserts a new column.
+- Put =#+CONSTANTS:= near the top of the file and =#+TBLFM:= immediately below the table. In a formula, =$2= means column 2 of the current row, =$3= is column 3, and =$vat= refers to the named constant:
+
+#+begin_example
+#+CONSTANTS: vat=0.2
+| Item | Net | Gross |
+|------+-----+-------|
+| Book |  10 | 12.00 |
+#+TBLFM: $3=$2*(1+$vat);%.2f
+#+end_example
+
+- After changing =#+CONSTANTS:=, press =C-c C-c= on that line to apply it, then =C-c C-c= on =#+TBLFM:= to recalculate. From inside the table, =C-u C-c C-c= recalculates the whole table.
+
+** Export
+
+- =C-c C-e= opens the export menu. =h h= writes an HTML file; =h o= writes it and opens it in a browser.
+- =l p= writes a PDF via LaTeX; =l o= also opens the PDF. PDF export needs a LaTeX installation.
+- Beamer is Org's slide backend. Making a PDF needs a TeX installation with Beamer; its available themes come from that installation. Run =M-: (require 'ox-beamer) RET= once, or add =(require 'ox-beamer)= to =init.el=. Then =C-c C-e l P= exports a slide PDF; =l O= exports and opens it.
+- In a slide file, use =#+LATEX_CLASS: beamer=. Each top-level =* Heading= becomes a slide; =#+TITLE:= adds a title slide. Optional: =#+LATEX_CLASS_OPTIONS: [aspectratio=169]= for widescreen slides and =#+BEAMER_THEME: default= for a plain theme.
+- =#+OPTIONS: toc:nil ^:nil tags:t f:t= omits the contents slide, disables superscript/subscript markup, and includes tags and footnotes. =tags:t= and =f:t= are already defaults; include them only if you want to be explicit.
+- Put this near the top of a file to choose what appears in HTML and PDF exports:
+
+#+begin_example
+#+OPTIONS: d:t \n:t p:t todo:t
+#+end_example
+
+=d:t= includes drawers; =\n:t= preserves single line breaks; =p:t= includes planning lines (=SCHEDULED=, =DEADLINE=, =CLOSED=); =todo:t= shows TODO keywords on headings.
+
+- Add =author:nil= to =#+OPTIONS:= to omit the Author line even without =#+AUTHOR:= (otherwise Emacs uses =user-full-name=). =timestamp:nil= omits the changing =Created= line.
+- In an example block, write =,* Heading= instead of =* Heading= for a sample headline. Org removes the leading comma on export; without it, the sample becomes a real heading.
+- To keep a numbered list together around a source block, indent the block and any explanation beneath its list item.
+
+[[https://orgmode.org/manual/Exporting.html][Manual: exporting]]
+
+** Structure and source code blocks
+
+- With =org-tempo= enabled in =init.el=, type these at the start of a line in Org insert state; =TAB= inserts both =#+begin_= and =#+end_= lines. The letters are case-sensitive:
+  - =<s TAB= — source code (=src=); add a language after =#+begin_src=.
+  - =<e TAB= — literal text or output (=example=).
+  - =<q TAB= — quotation (=quote=).
+  - =<C TAB= — text omitted from export (=comment=; capital =C=).
+- =C-c C-,= opens the same block-template menu. Select text first to wrap it in a block.
+
+- On a source block, =C-c C-c= runs it and writes/updates =#+RESULTS:= below; Org asks before running code by default. =C-c '= opens an edit buffer in that language's mode; press it again to return.
+- Poor man's Jupyter notebook: put the language after =#+begin_src=, close with =#+end_src=, and run these blocks in order. The second returns =15=:
+
+  #+begin_example
+  #+begin_src emacs-lisp
+  (setq my-notebook-number 10)
+  #+end_src
+
+  #+begin_src emacs-lisp
+  (+ my-notebook-number 5)
+  #+end_src
+  #+end_example
+
+  The variable lives in this Emacs process, not just this file, and disappears when Emacs exits. Emacs Lisp needs no =:session= header.
+- =org-babel-load-languages= controls which languages may run, not which blocks you may write. Yours currently enables only =emacs-lisp=. Use =M-x customize-variable RET org-babel-load-languages RET= to enable more; the course's =sh= blocks use =shell=, and =dot= blocks use =dot=. The corresponding programs must also be installed.
+
+[[https://orgmode.org/manual/Working-with-Source-Code.html][Manual: source code]]; [[https://orgmode.org/manual/Languages.html][Manual: Babel languages]]
+
+** Attachments
+
+- On a heading, =C-c C-a= opens the attachment menu; it does not create a directory by itself. Adding a file creates an =:ID:= if needed, stores it under =data/= beside the Org file (in an ID-specific subdirectory), and adds the =ATTACH= tag.
+- In that menu, =a= uses the default =org-attach-method= (=cp=, copy). Choose a method explicitly with =c= copy, =m= move (removes the original), =l= hard link, or =y= symbolic link (points to the original path). =u= downloads a URL into the attachment directory.
+- Open an attached file: =C-c C-a o= (choose one if there are several); =C-c C-a O= forces it to open in Emacs.
+- Open the heading's attachment directory: =C-c C-a f= uses an external file manager; =C-c C-a F= opens it in Emacs's Dired. Both create the directory if missing.
+- Delete one attachment: =C-c C-a d=, then choose the file. It leaves the =ATTACH= tag even if that was the last file. =C-c C-a D= deletes all attachments and their directory after confirmation, and removes the tag.
+- Sync attachments: =C-c C-a z= updates the =ATTACH= tag after files are added or removed manually, including after deleting the last file with =d=. It may offer to remove an empty attachment directory.
+- Link to an attached file with =[[attachment:report.pdf]]= or =[[attachment:report.pdf][Report]]=. The =attachment:filename= target resolves from the heading containing the link, not from every Org file or the agenda list. After attaching a file, =C-c C-l= can insert its stored =attachment:= link. For a link elsewhere, use a =file:= path to the attachment or link to the owning heading with =id:=.
+- Attachment inheritance: in this setup, child headings do not use a parent's attachment directory by default. To let them do so, put =(setq org-attach-use-inheritance t)= in =init.el=. A child with its own =:ID:= uses its own attachment directory; an inherited =:DIR:= takes precedence over an =:ID:=. Inheriting the =ATTACH= *tag* alone does not enable attachment-directory inheritance.
+- To keep attachments in one place when Org files move, set =org-attach-id-dir= to an absolute path in =init.el=: =(setq org-attach-id-dir "/path/to/attachments/")=.
+
+** Refiling
+
+- Refile (move) the current subtree: =C-c C-w= (=org-refile=), then choose a destination heading.
+- =org-refile-targets= decides which files and headings are offered. To include the current file and agenda files, up to heading level 3, put this in =init.el=:
+
+#+begin_src emacs-lisp
+(setq org-refile-targets '((nil :maxlevel . 3)
+                          (org-agenda-files :maxlevel . 3)))
+#+end_src
+
+- Optional: =(setq org-refile-use-outline-path 'file)= shows destinations as =file.org/Parent/Child= and lets you choose just =file.org= to refile at its top level.
+- Optional: =(setq org-refile-allow-creating-parent-nodes 'confirm)= lets you type =/New heading= after an existing destination to create that heading, with confirmation.
+
+** Custom TODO states
+
+Add a line like this at the start of an Org file to define its own state sequence:
+
+#+begin_example
+#+SEQ_TODO: TODO(t) WAITING(w@/!) | DONE(d!) CANCELED(c)
+#+end_example
+
+States before =|= still need action; states after it count as done. The letters in parentheses are quick selection keys. After changing the line, press =C-c C-c= on it to apply the new states.
+
+With the default =TODO= / =DONE= states and no selection letters, =C-c C-t= cycles through no state, TODO, DONE, and back to no state. A sequence with letters such as =(t)= or =(d)= opens the one-key selection menu instead. GTD-style alternative:
+
+#+begin_example
+#+SEQ_TODO: NEXT(n) TODO(t) WAITING(w) SOMEDAY(s) PROJ(p) | DONE(d) CANCELLED(c)
+#+end_example
+
+Here =NEXT= is first, so =S-→= reaches it first when cycling from a heading with no TODO state.
+
+Automatic state-change logging: in =WAITING(w@/!)=, =@= prompts for a time-stamped note when you enter WAITING; =/!= records a timestamp when you leave it (unless the next state already logs entry). In =DONE(d!)=, =!= records a timestamp on entry without prompting. Logs go under the heading, or into the drawer configured in [[*Drawers and quick notes][Drawers and quick notes]].
+
+** Priorities
+
+- On a heading, =S-↑= / =S-↓= raises/lowers priority. =C-c ,= (=org-priority=) lets you choose directly; press =SPC= to remove the priority cookie.
+- Default priorities: =A= (highest), =B= (also used when no cookie is shown), =C= (lowest). Example: =* TODO [#A] Pay invoice=.
+- In the agenda, =S-↑= / =S-↓= also changes priority. Refresh to re-sort with =r=, or =gr= when Evil Org agenda keys are active.
+- For numeric priorities in one file, add =#+PRIORITIES: 1 5 3= near its top (highest, lowest, default); headings then use cookies such as =[#1]=. Press =C-c C-c= on the line to apply it.
+
+** Ordered TODO tasks
+
+- On a parent heading, =C-c C-x o= (=org-toggle-ordered-property=; lowercase =o=) toggles =:ORDERED: t=. Its TODO child headings must then be completed from top to bottom.
+- For TODO children, this requires =(setq org-enforce-todo-dependencies t)= in =init.el=. That setting also blocks marking any TODO parent DONE while it has unfinished TODO children. =ORDERED= also makes checkboxes under the heading follow their list order.
+
+** Tags
+
+Define tag choices for one file with a line such as:
+
+#+begin_example
+#+TAGS: work(w) home(h) urgent(u)
+#+end_example
+
+- Set tags on the current heading: =C-c C-q= (=org-set-tags-command=). The letters in parentheses are quick selection keys.
+- To enter a tag not in the list, press =TAB= in the tag picker, type the tag, then press =RET=.
+- After changing the =#+TAGS= line, press =C-c C-c= on that line to apply it.
+- Tags inherit down the heading tree by default: a child under =* Project :work:= also matches =work= in tag searches and agenda filters, even if =:work:= is written only on the parent. =org-use-tag-inheritance= controls this; =org-tags-exclude-from-inheritance= can exclude selected tags. =#+FILETAGS: :work:= applies a tag to every entry in a file.
+
+** Drawers and quick notes
+
+A drawer keeps details under a heading but out of the way. It starts with =:NAME:= and ends with =:END:=. Put the cursor on the drawer's name line and press =TAB= to show or hide its contents. Create a drawer manually with =C-c C-x d= (=org-insert-drawer=).
+
+- In the special =:PROPERTIES:= drawer, press =C-c C-c= once on =:PROPERTIES:=, a property line, or its =:END:= line to open the property menu: =s= sets (adds or edits), =d= deletes, =D= deletes throughout the file, and =c= computes a property. This menu does not apply to ordinary drawers such as =:LOGBOOK:=.
+- From anywhere in an entry, =C-c C-x p= (=org-set-property=) sets a property and creates its =:PROPERTIES:= drawer if needed.
+
+To put time-stamped quick notes and configured TODO state logs in a =LOGBOOK= drawer, run =M-x customize-variable RET org-log-into-drawer RET=, choose =LOGBOOK=, and save the setting for future sessions. If you keep this setting in =init.el=, add:
+
+#+begin_src emacs-lisp
+(setq org-log-into-drawer "LOGBOOK")
+#+end_src
+
+Use another drawer name in place of ="LOGBOOK"= if you prefer. Org creates the chosen drawer when the first note is stored. You can override the choice for one heading or subtree with =:LOG_INTO_DRAWER: NOTES= in its =PROPERTIES= drawer.
+
+To enable automatic logging in just one Org file, add this near its top:
+
+#+begin_example
+#+STARTUP: lognotedone logreschedule
+#+end_example
+
+=lognotedone= prompts for a time-stamped note when a task is marked DONE. =logreschedule= records a timestamp when an existing scheduled date changes, without prompting. Press =C-c C-c= on the line to apply it. A =DONE(d!)= state may add a second timestamp, so omit its =!= if you use =lognotedone=.
+
+1. Move to the heading you want to annotate, or anywhere in its entry.
+2. Press =C-c C-z= (=org-add-note=).
+3. In the =*Org Note*= buffer, press =i= if Evil is in normal mode, type your note, then press =C-c C-c= to file it under that heading with a timestamp.
+
+#+begin_example
+,* TODO Call supplier
+:LOGBOOK:
+- Note taken on [2026-11-05 Thu 14:30] \\
+  Asked for a revised quote.
+:END:
+#+end_example
+
+** Archiving
+
+- =C-c C-x a= (=org-toggle-archive-tag=) only toggles the =ARCHIVE= tag. The subtree stays in the current file, even if =#+ARCHIVE:= is set.
+- To move the subtree to an archive file, put the cursor on its heading and press =C-c C-x C-s= (or =C-c $=; =org-archive-subtree=). This also works if you already gave it the =ARCHIVE= tag. Save the source file afterward with =C-x C-s=.
+- With =#+ARCHIVE: %s_archive::= near the top of =notes.org=, Org moves the subtree to =notes.org_archive= in the same directory. =%s= includes the original =.org= extension; the empty part after =::= means archived entries become top-level headings. After adding or changing the =#+ARCHIVE:= line, press =C-c C-c= on it to apply the setting.
+- =C-c C-x C-a= (=org-archive-subtree-default=) runs the command in =org-archive-default-command=, which is =org-archive-subtree= by default. =C-c C-x A= instead moves the subtree under an =Archive= sibling in the same file.
+
+** Repeating tasks
+
+Put a repeater inside a scheduled or deadline timestamp. For example, start with =DEADLINE: <2026-10-31 Sat +2d>= and mark the task DONE on 2026-11-03 with =C-c C-t= (=org-todo=). Org advances the date and returns the task to TODO.
+
+To return recurring tasks to a separate state, put =REPEATED= first in [[*Custom TODO states][your TODO sequence]]: =#+SEQ_TODO: REPEATED(r) TODO(t) | DONE(d)=. Then DONE returns the task to =REPEATED=, but ordinary tasks also start there. To keep =TODO= first, put =REPEATED= after it and set =:REPEAT_TO_STATE: REPEATED= on each recurring heading.
+
+| Repeater | Next deadline | Meaning |
+|----------+---------------+---------|
+| =+2d=    | 2026-11-02    | One interval after the old deadline; still overdue. |
+| =++2d=   | 2026-11-04    | Skip missed dates; keep the original two-day rhythm. |
+| =.+2d=   | 2026-11-05    | Two days after completion. |
+
+[[https://orgmode.org/manual/Repeated-tasks.html][Manual: repeated tasks]]
+
+** Habits
+
+- Enable Org's built-in habit module: =M-x customize-variable RET org-modules RET=, tick =habit=, then =Apply and Save=. Check with =C-h v org-modules RET=; the list should contain =org-habit=.
+- A habit needs an open TODO keyword (ordinary =TODO= is fine), =:STYLE: habit=, and a repeating =SCHEDULED= date. Use =C-c C-x p= on the heading to set =STYLE= to =habit=.
+
+#+begin_example
+,* TODO Read for ten minutes
+SCHEDULED: <2026-11-21 Sat .+1d>
+:PROPERTIES:
+:STYLE: habit
+:END:
+#+end_example
+
+- Mark it =DONE= each time. Org reschedules it and writes a timestamped =State "DONE"= record; the agenda graph reads these records. Your =org-log-repeat= is already =time=. See [[*Drawers and quick notes][Drawers and quick notes]] for where logs are stored.
+
+[[https://orgmode.org/manual/Tracking-your-habits.html][Manual: habits]]; [[https://orgmode.org/manual/Tracking-TODO-state-changes.html][Manual: TODO state logging]]
+
+** Checklists
+
+- On a chapter list item, =S-↓= / =S-↑= (Shift + Down/Up) jumps to the next/previous item at the same level, skipping its nested checkboxes (=org-next-item= / =org-previous-item=).
+- On an existing checkbox item in Evil normal mode, =o= (=evil-org-open-below=) adds an unchecked item below; =O= (=evil-org-open-above=) adds one above. The new item stays at the same list level.
+- =M-S-RET= (=org-insert-todo-heading=) also inserts a checkbox on a list item, but its position matters: at line start it inserts above, in the middle it splits the text, and at line end it inserts below.
+- Toggle a checkbox: =C-c C-c= (or =M-x org-toggle-checkbox=).
+
+** Checkbox progress
+
+Use =:COOKIE_DATA: checkbox recursive= on the parent heading to count checkboxes in nested sections. Put =[/]= on the heading and section list items:
+
+#+begin_example
+,* Course [/]
+:PROPERTIES:
+:COOKIE_DATA: checkbox recursive
+:END:
+- Basics [/]
+  - [ ] Introduction
+- Advanced [/]
+  - [ ] Tags
+#+end_example
+
+Both counters update when you toggle a checkbox. After editing checkboxes by hand, refresh the counts with =C-c #= (=org-update-statistics-cookies=).
+
+** Timers
+
+- Start a timer: =C-c C-x ;= (=org-timer-set-timer=), then enter a duration in minutes, e.g. =20= for a 20-minute Pomodoro. Alternatively, run =SPC : org-timer-set-timer RET=.
+- Skip the prompt with a numeric prefix: =C-u 5 C-c C-x ;= starts a 5-minute timer; use =C-u 20 C-c C-x ;= for 20 minutes. Plain =C-u C-c C-x ;= uses =org-timer-default-timer=.
+- Count up from zero: =C-c C-x 0= (=org-timer-start=; digit zero). Prefix it with =C-u= to enter a starting offset.
+- Insert the current relative time at point: =C-c C-x .= (=org-timer=). If no timer is running, this starts one. Prefix with =C-u= to restart it.
+- Insert a description-list item stamped with the current relative time: =C-c C-x -= (=org-timer-item=). =C-u= restarts the timer first.
+- Pause/resume either timer: =C-c C-x ,= (=org-timer-pause-or-continue=). Prefix it with =C-u= to stop instead, or use =C-c C-x _= (=org-timer-stop=).
+
+** Clocking work
+
+Clocking records time spent on an Org heading; it is separate from the timers above.
+
+- Clock in on a task: =C-c C-x C-i= (=org-clock-in=). Clock out and keep the time record: =C-c C-x C-o= (=org-clock-out=).
+- Clock back into the last clocked-out task: =C-c C-x C-x= (=org-clock-in-last=). This starts a new clock interval. Prefix with =C-u= to choose from recently clocked tasks instead.
+- Cancel a clock started by mistake, removing its start timestamp: =C-c C-x C-q= (=org-clock-cancel=).
+- Jump to the currently clocked task: =C-c C-x C-j= (=org-clock-goto=).
+- Show clock totals beside headings throughout the current buffer: =C-c C-x C-d= (=org-clock-display=). It defaults to this year, so older clock entries show zero. Use =C-u C-u C-c C-x C-d= to choose a date range, or customize =org-clock-display-default-range= to =untilnow= for all past time. Press =C-c C-c= (=org-ctrl-c-ctrl-c=) to leave this view and remove the totals.
+- =org-clock-into-drawer= chooses where =CLOCK= lines go. Your =init.el= currently sets it to ="CLOCKING"=, so they go into a =:CLOCKING:= drawer. To choose another drawer, use =M-x customize-variable RET org-clock-into-drawer RET=, or set =(setq org-clock-into-drawer "LOGBOOK")= in =init.el=. With =t=, Org uses an existing log drawer or =LOGBOOK=.
+
+[[https://orgmode.org/manual/Clocking-Work-Time.html][Manual: clocking]]
+
+** Dynamic blocks
+
+- =C-c C-x x= inserts a dynamic block. Choose =columnview= to capture [[*Column view][column view]] as an exportable table. =:id global= covers the whole file; =:id local= covers the containing subtree. Its columns come from =#+COLUMNS:=.
+
+#+begin_example
+#+BEGIN: columnview :id global
+#+END:
+#+end_example
+
+- Choose =clocktable= for clocked-time totals:
+
+#+begin_example
+#+BEGIN: clocktable :scope file :maxlevel 2 :block 2019-07
+#+END:
+#+end_example
+
+- =:scope file= covers the whole file (use =subtree= for the current subtree or =agenda= for agenda files); =:maxlevel 2= shows two heading levels and rolls deeper clock time into them; =:block 2019-07= selects July 2019. Use =thismonth= for the current month.
+- Refresh either block with =C-c C-c= (or =C-c C-x C-u=) on its =#+BEGIN:= line.
+
+[[https://orgmode.org/manual/Dynamic-Blocks.html][Manual: dynamic blocks]]
+
+** Column view
+
+Put a file-wide column format near the top of an Org file (on one line):
+
+#+begin_example
+#+COLUMNS: %30ITEM(Task) %7TODO %10CLOCKSUM(Clock)
+#+end_example
+
+Each =%= starts a column: the number is its width, =ITEM= is the heading text, =TODO= is its state, and =CLOCKSUM= is the total clocked time in that heading's subtree. Text in parentheses is the displayed column title. =CLOCKSUM= includes old clock entries too, unlike the default range of =org-clock-display=.
+
+- Open column view: =C-c C-x C-c= (=org-columns=). From before the first heading, it covers the whole file; from a heading, it covers that subtree.
+- Move between fields with the arrow keys; press =e= (=org-columns-edit-value=) to edit a field. Exit with =q= or =C-c C-c= (=org-columns-quit=).
+- For a format limited to one subtree, put the same column specification in a =:COLUMNS:= property on its parent heading instead of using =#+COLUMNS:=.
+
+** Effort estimates
+
+- Before starting a task, press =C-c C-x e= (=org-set-effort=; lowercase =e=) and enter an estimate such as =0:30= for 30 minutes. Org stores it as an =:EFFORT:= property on that heading.
+- While clocked in, the mode line shows elapsed time against the estimate, e.g. =0:12/0:30=. At the estimate it highlights the clock in red and sends one notification. Change the estimate of the currently clocked task with =C-c C-x C-e= (=org-clock-modify-effort-estimate=).
+- To offer common estimates in this file, put =#+PROPERTY: Effort_ALL 0:10 0:20 0:30 1:00 2:00= near the top. =C-c C-x e= offers these values; =C-u C-c C-x e= advances to the next one.
+- To compare estimates and actual time in column view, add =%Effort(Estimate){:}= beside =%CLOCKSUM(Clock)= in the =#+COLUMNS:= line. The ={:}= sums child estimates on parent headings. In column view, put the cursor in an Effort cell and press =S-→= / =S-←= (Shift + Right/Left) to cycle through the =Effort_ALL= values.
+
+** Agenda
+
+- See the current agenda file list: =C-h v org-agenda-files RET=.
+- Add the current Org file to the agenda list: =C-c [= (=org-agenda-file-to-front=). The list is saved between Emacs sessions.
+- Remove the current Org file from the agenda list: =C-c ]= (=org-remove-file=).
+- Open the weekly agenda: =C-c a a= (=org-agenda=, then =a=; direct command: =M-x org-agenda-list=).
+- In the Evil Org agenda, =gD f= toggles Follow mode (=org-agenda-follow-mode=); =F= is Evil's backward character search. With Follow on, =j/k= moves through lines and =gj/gk= jumps between items while another window shows the matching Org entry. Press =gD f= again to restore the previous window layout.
+- Optional: =(setq org-agenda-start-with-follow-mode t)= in =init.el= enables Follow mode when a new agenda opens; it is off by default.
+- Optional Emacs Diary: create the plain-text =~/.emacs.d/diary= (your current =diary-file=) with date-first lines such as =November 25, 2026 Dentist at 14:00=. Set =(setq org-agenda-include-diary t)= in =init.el= (reload it) or Customize, then reopen the daily/weekly agenda to see its entries. [[https://orgmode.org/manual/Weekly_002fdaily-agenda.html][Manual: Diary integration]]
+- Google Calendar =.ics= exports can be imported into an Emacs Diary with =M-x icalendar-import-file=. [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Importing-Diary.html][Manual: iCalendar import]]
+- Search tags in agenda files: =C-c a m=, then enter =NEW= to match =:NEW:=; old timestamps do not affect this search.
+- For one search in the current Org file, press =<= in the agenda dispatcher before the command: =C-c a < m=, then =NEW=. This does not add the file to =org-agenda-files=; the restriction ends after that command.
+- Bulk actions in your Evil Org agenda: =m= toggles the mark on one entry and moves to the next; =*= marks all visible entries; =M= clears all marks. Marks select entries, not whole files.
+- Press =x= to act on marked entries, then choose a key (marks clear afterward):
+
+| After =x= | Bulk action |
+|-----------+-------------|
+| =+=       | Add a tag. |
+| =-=       | Remove a tag. |
+| =$=       | Archive to the configured archive location. |
+| =A=       | Archive under an =Archive= sibling. |
+| =t=       | Change TODO state. |
+| =s=       | Schedule all for one date; enter =++8d= to shift existing schedules by eight days. |
+| =d=       | Set one deadline. |
+| =r=       | Refile all to one target; refresh the agenda with =gr=. |
+| =S=       | Scatter schedules randomly across the next N days. |
+
+- Bulk =t= skips TODO blockers and note prompts, but still records configured timestamps. The Org manual's default keys are =B= for bulk actions, =M-m= to toggle one mark, and =U= to clear marks.
+- Move to the next or previous week in our agenda setup: =]]= / =[[= (=org-agenda-later= / =org-agenda-earlier=).
+- Close the agenda: =q= (=org-agenda-quit=).
+
+[[https://orgmode.org/manual/Agenda-Files.html][Manual: agenda files]]; [[https://orgmode.org/manual/Matching-tags-and-properties.html][Manual: tag searches]]; [[https://orgmode.org/manual/Agenda-Commands.html][Manual: agenda commands]]
