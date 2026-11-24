@@ -65,6 +65,7 @@ Emacs calls a pane a /window/. A window displays a /buffer/; closing one of seve
 
 [[https://orgmode.org/manual/][Org manual]]
 
+- Add or edit a property on the current heading: =C-c C-x p= (=org-set-property=). Enter its name and value; Org creates the =:PROPERTIES:= drawer if needed.
 - Move a heading and its subtree up or down: =M-↑= / =M-↓= (Alt + Up/Down; =org-metaup= / =org-metadown=).
 - Promote or demote a heading: =M-←= / =M-→= (Alt + Left/Right; =org-metaleft= / =org-metaright=).
 - Cycle a heading through TODO states (such as TODO and DONE): =S-←= / =S-→= (Shift + Left/Right; =org-shiftleft= / =org-shiftright=).
@@ -224,7 +225,6 @@ Define tag choices for one file with a line such as:
 A drawer keeps details under a heading but out of the way. It starts with =:NAME:= and ends with =:END:=. Put the cursor on the drawer's name line and press =TAB= to show or hide its contents. Create a drawer manually with =C-c C-x d= (=org-insert-drawer=).
 
 - In the special =:PROPERTIES:= drawer, press =C-c C-c= once on =:PROPERTIES:=, a property line, or its =:END:= line to open the property menu: =s= sets (adds or edits), =d= deletes, =D= deletes throughout the file, and =c= computes a property. This menu does not apply to ordinary drawers such as =:LOGBOOK:=.
-- From anywhere in an entry, =C-c C-x p= (=org-set-property=) sets a property and creates its =:PROPERTIES:= drawer if needed.
 
 To put time-stamped quick notes and configured TODO state logs in a =LOGBOOK= drawer, run =M-x customize-variable RET org-log-into-drawer RET=, choose =LOGBOOK=, and save the setting for future sessions. If you keep this setting in =init.el=, add:
 
